@@ -41,3 +41,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# exported reports / artifacts dropped in the repo root (docs/ stays tracked)
+/*.html
