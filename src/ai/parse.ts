@@ -1,9 +1,11 @@
 /**
- * Ingestion intelligence: turn free text / receipts / UPI screenshots into a
- * structured transaction, and auto-categorize it with a confidence score.
- * Each function tries the LLM, then falls back to deterministic heuristics.
+ * On-device ingestion heuristics: turn free text into a structured transaction
+ * and categorize it with a confidence score, using nothing but a keyword table.
+ *
+ * These are the deterministic fallbacks. The LLM paths live server-side in the
+ * `parse-txn` Edge Function and are reached through `@/data/ai` — callers try
+ * that first and fall back to these when the AI is unavailable.
  */
-import { extractJSON, hasLLMConfigured, llmChat } from './llm';
 import { todayISO } from '@/lib/format';
 
 export interface ParsedTxn {
@@ -87,61 +89,4 @@ export function parseNLHeuristic(text: string): ParsedTxn {
     confidence: amount === 0 ? 0.3 : confidence,
     needsReview: confidence < 0.75 || amount === 0,
   };
-}
-
-/** Natural-language entry → structured transaction. */
-export async function parseNaturalLanguage(text: string, categories: string[]): Promise<ParsedTxn> {
-  if (!hasLLMConfigured()) return parseNLHeuristic(text);
-  try {
-    const sys = `You extract a single financial transaction from Indian personal-finance text.
-Return ONLY JSON: {"amount": number, "merchant": string|null, "category": string, "txnDate": "YYYY-MM-DD", "type": "expense"|"income", "confidence": number}.
-Category must be one of: ${categories.join(', ')}.
-Amounts are Indian Rupees. Today is ${todayISO()}. Resolve relative dates like "yesterday".`;
-    const raw = await llmChat([
-      { role: 'system', content: sys },
-      { role: 'user', content: text },
-    ], { json: true, temperature: 0 });
-    const parsed = extractJSON<Partial<ParsedTxn>>(raw);
-    if (!parsed || typeof parsed.amount !== 'number') return parseNLHeuristic(text);
-    const confidence = typeof parsed.confidence === 'number' ? parsed.confidence : 0.8;
-    return {
-      amount: parsed.amount,
-      merchant: parsed.merchant ?? null,
-      category: parsed.category && categories.includes(parsed.category) ? parsed.category : categorizeHeuristic(text).category,
-      txnDate: parsed.txnDate ?? parseRelativeDate(text),
-      type: parsed.type === 'income' ? 'income' : 'expense',
-      confidence,
-      needsReview: confidence < 0.7,
-    };
-  } catch {
-    return parseNLHeuristic(text);
-  }
-}
-
-/** Auto-categorization for a known merchant/amount (used on every insert). */
-export async function autoCategorize(merchant: string, note: string, categories: string[]): Promise<{ category: string; confidence: number }> {
-  const text = `${merchant} ${note}`.trim();
-  if (!hasLLMConfigured()) return categorizeHeuristic(text);
-  try {
-    const raw = await llmChat([
-      { role: 'system', content: `Classify the transaction into exactly one category from: ${categories.join(', ')}. Return ONLY JSON {"category": string, "confidence": number}.` },
-      { role: 'user', content: text },
-    ], { json: true, temperature: 0 });
-    const parsed = extractJSON<{ category: string; confidence: number }>(raw);
-    if (parsed && categories.includes(parsed.category)) return parsed;
-    return categorizeHeuristic(text);
-  } catch {
-    return categorizeHeuristic(text);
-  }
-}
-
-/** Vision: receipt / UPI screenshot → transaction. base64 image (no data: prefix). */
-export async function parseImage(base64: string, mime: string, kind: 'receipt' | 'upi', categories: string[]): Promise<ParsedTxn | null> {
-  if (!hasLLMConfigured()) return null; // caller shows manual-confirm form in demo mode
-  try {
-    const { parseImageWithVision } = await import('./vision');
-    return await parseImageWithVision(base64, mime, kind, categories);
-  } catch {
-    return null;
-  }
 }

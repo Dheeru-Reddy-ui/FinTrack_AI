@@ -72,15 +72,6 @@ export interface Profile {
   timezone: string;
 }
 
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  text: string;
-  citations?: string[]; // transaction ids referenced
-  createdAt: string;
-  pending?: boolean;
-}
-
 export interface Insight {
   id: string;
   kind: 'budget' | 'anomaly' | 'subscription' | 'trend' | 'tip';

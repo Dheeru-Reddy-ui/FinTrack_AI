@@ -24,11 +24,12 @@ https://docs.expo.dev/versions/v57.0.0/ before writing framework code.
 - Screens: `app/(tabs)/` = Overview / Ledger / Add / Insights / Settings; plus `app/chat.tsx`
   (RAG), `app/goals.tsx` + `app/goal-edit.tsx` (planner), `app/budget-new.tsx`,
   `app/notifications.tsx`, `app/login.tsx`.
-- **Orphaned demo-era code — do not build on it**: nothing imports `src/data/store.tsx`
-  (`useApp()`), which also orphans `src/data/seed.ts`, `src/ai/chat.ts`, `src/ai/llm.ts` and
-  `src/ai/vision.ts`. In `src/ai/parse.ts` only `parseNLHeuristic` and `categorizeHeuristic`
-  are live (used as on-device fallbacks); its LLM paths have no callers. `legacy_ui/` sits
-  outside the router entirely.
+- **AI is server-side only.** The client never calls an LLM directly — everything goes through
+  `src/data/ai.ts` to the Edge Functions. `src/ai/parse.ts` holds only the on-device
+  deterministic fallbacks (`parseNLHeuristic`, `categorizeHeuristic`) used when the AI is
+  unavailable. Don't reintroduce a client-side LLM path; the API key must never ship in the
+  bundle. (The demo-era `store.tsx` / `seed.ts` / `ai/chat.ts` / `ai/llm.ts` / `ai/vision.ts`
+  modules and `legacy_ui/` were deleted in a962958..HEAD — recover from git if ever needed.)
 
 ## Gotchas
 - Use `localISO()` (not `toISOString()`) for dates — avoids UTC off-by-one in IST.
