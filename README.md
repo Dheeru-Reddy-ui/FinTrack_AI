@@ -11,6 +11,27 @@ with the LLM used only to phrase findings in plain English.
 
 ---
 
+## Download
+
+<img src="docs/download-qr.png" alt="QR code to download the FinTrack AI APK" width="170" align="right">
+
+**[⬇ Download the Android APK](https://github.com/Dheeru-Reddy-ui/FinTrack_AI/releases/latest/download/FinTrack-AI.apk)** — or point your phone's camera at the code.
+
+**Requires Android 7.0 (Nougat, API 24) or newer** · ~102 MB
+
+1. Tap the link or scan the QR. Your browser downloads `FinTrack-AI.apk`.
+2. Open the finished download. Android asks once for permission to install unknown apps — grant it
+   to your browser, then tap **Install**.
+3. Play Protect flags the app as unrecognised, because the APK is signed with a development
+   keystore rather than distributed through the Play Store. Choose **Install anyway**.
+4. Sign up with an email and password — this build runs against the live Supabase backend.
+
+The link always resolves to the newest release, so the QR above never goes stale.
+
+<br clear="right">
+
+---
+
 ## Features
 
 **Foundation (live)**
